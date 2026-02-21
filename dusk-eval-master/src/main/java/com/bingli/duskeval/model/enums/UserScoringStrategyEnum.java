@@ -1,7 +1,5 @@
 package com.bingli.duskeval.model.enums;
 
-import org.apache.commons.lang3.ObjectUtils;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,19 +7,21 @@ import java.util.stream.Collectors;
 /**
  * 应用类型枚举
  *
- 
+ * 评分策略（0-自定义，1-AI）
  */
-public enum AppTypeEnum {
+public enum UserScoringStrategyEnum {
 
-    SCORE("得分类", 0),
-    TEST("测评类", 1);
+     CUSTOM("自定义", 0),
+     AI("AI", 1);
+
+
 
 
     private final String text;
 
     private final int value;
 
-    AppTypeEnum(String text, int value) {
+    UserScoringStrategyEnum(String text, int value) {
         this.text = text;
         this.value = value;
     }
@@ -41,11 +41,11 @@ public enum AppTypeEnum {
      * @param value
      * @return
      */
-    public static AppTypeEnum getEnumByValue(int value) {
+    public static UserScoringStrategyEnum getEnumByValue(int value) {
         if (value < 0) {
             return null;
         }
-        for (AppTypeEnum anEnum : AppTypeEnum.values()) {
+        for (UserScoringStrategyEnum anEnum : UserScoringStrategyEnum.values()) {
             if (anEnum.value == value) {
                 return anEnum;
             }

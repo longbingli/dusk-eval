@@ -27,7 +27,7 @@ public class QuestionQueryRequest extends PageRequest implements Serializable {
     /**
      * 题目内容（json格式）
      */
-    private QuestionDTO questionContent;
+    private String questionContent;
 
     /**
      * 应用 id

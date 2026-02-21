@@ -13,15 +13,15 @@ import java.util.stream.Collectors;
  */
 public enum AppScoringStrategyEnum {
 
-    CUSTOM("自定义", "0"),
-    TEST("AI", "1");
+    CUSTOM("自定义", 0),
+    TEST("AI", 1);
 
 
     private final String text;
 
-    private final String value;
+    private final int value;
 
-    AppScoringStrategyEnum(String text, String value) {
+    AppScoringStrategyEnum(String text, int value) {
         this.text = text;
         this.value = value;
     }
@@ -31,7 +31,7 @@ public enum AppScoringStrategyEnum {
      *
      * @return
      */
-    public static List<String> getValues() {
+    public static List<Integer> getValues() {
         return Arrays.stream(values()).map(item -> item.value).collect(Collectors.toList());
     }
 
@@ -41,19 +41,19 @@ public enum AppScoringStrategyEnum {
      * @param value
      * @return
      */
-    public static AppScoringStrategyEnum getEnumByValue(String value) {
-        if (ObjectUtils.isEmpty(value)) {
+    public static AppScoringStrategyEnum getEnumByValue(int value) {
+        if (value < 0) {
             return null;
         }
         for (AppScoringStrategyEnum anEnum : AppScoringStrategyEnum.values()) {
-            if (anEnum.value.equals(value)) {
+            if (anEnum.value == value) {
                 return anEnum;
             }
         }
         return null;
     }
 
-    public String getValue() {
+    public int getValue() {
         return value;
     }
 

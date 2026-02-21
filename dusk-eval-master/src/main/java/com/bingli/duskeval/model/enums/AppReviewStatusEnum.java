@@ -1,7 +1,5 @@
 package com.bingli.duskeval.model.enums;
 
-import org.apache.commons.lang3.ObjectUtils;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,19 +7,21 @@ import java.util.stream.Collectors;
 /**
  * 应用类型枚举
  *
- 
+ 审核状态：0-待审核, 1-通过, 2-拒绝
  */
-public enum AppTypeEnum {
+public enum AppReviewStatusEnum {
 
-    SCORE("得分类", 0),
-    TEST("测评类", 1);
+    WAIT("待审核", 0),
+    PASS("通过", 1),
+    REFUSE("拒绝", 2);
+
 
 
     private final String text;
 
     private final int value;
 
-    AppTypeEnum(String text, int value) {
+    AppReviewStatusEnum(String text, int value) {
         this.text = text;
         this.value = value;
     }
@@ -41,11 +41,11 @@ public enum AppTypeEnum {
      * @param value
      * @return
      */
-    public static AppTypeEnum getEnumByValue(int value) {
+    public static AppReviewStatusEnum getEnumByValue(int value) {
         if (value < 0) {
             return null;
         }
-        for (AppTypeEnum anEnum : AppTypeEnum.values()) {
+        for (AppReviewStatusEnum anEnum : AppReviewStatusEnum.values()) {
             if (anEnum.value == value) {
                 return anEnum;
             }
