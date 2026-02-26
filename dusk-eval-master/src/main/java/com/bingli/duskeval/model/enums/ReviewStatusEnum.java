@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
  *
  审核状态：0-待审核, 1-通过, 2-拒绝
  */
-public enum AppReviewStatusEnum {
+public enum ReviewStatusEnum {
 
     WAIT("待审核", 0),
     PASS("通过", 1),
@@ -21,7 +21,7 @@ public enum AppReviewStatusEnum {
 
     private final int value;
 
-    AppReviewStatusEnum(String text, int value) {
+    ReviewStatusEnum(String text, int value) {
         this.text = text;
         this.value = value;
     }
@@ -41,11 +41,11 @@ public enum AppReviewStatusEnum {
      * @param value
      * @return
      */
-    public static AppReviewStatusEnum getEnumByValue(int value) {
+    public static ReviewStatusEnum getEnumByValue(int value) {
         if (value < 0) {
             return null;
         }
-        for (AppReviewStatusEnum anEnum : AppReviewStatusEnum.values()) {
+        for (ReviewStatusEnum anEnum : ReviewStatusEnum.values()) {
             if (anEnum.value == value) {
                 return anEnum;
             }

@@ -11,7 +11,7 @@ import com.bingli.duskeval.mapper.AppMapper;
 import com.bingli.duskeval.model.dto.app.AppQueryRequest;
 import com.bingli.duskeval.model.entity.App;
 import com.bingli.duskeval.model.entity.User;
-import com.bingli.duskeval.model.enums.AppReviewStatusEnum;
+import com.bingli.duskeval.model.enums.ReviewStatusEnum;
 import com.bingli.duskeval.model.enums.AppScoringStrategyEnum;
 import com.bingli.duskeval.model.enums.AppTypeEnum;
 import com.bingli.duskeval.model.vo.AppVO;
@@ -73,7 +73,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             ThrowUtils.throwIf(appName.length() > 80, ErrorCode.PARAMS_ERROR, "标题过长");
         }
         if (app.getReviewStatus()!= null){
-            AppReviewStatusEnum appReviewStatusEnum = AppReviewStatusEnum.getEnumByValue(reviewStatus);
+            ReviewStatusEnum appReviewStatusEnum = ReviewStatusEnum.getEnumByValue(reviewStatus);
             ThrowUtils.throwIf(appReviewStatusEnum == null, ErrorCode.PARAMS_ERROR, "应用审核状态非法");
         }
     }

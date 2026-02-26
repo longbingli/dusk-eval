@@ -14,9 +14,12 @@ import com.bingli.duskeval.model.dto.userAnswer.UserAnswerAddRequest;
 import com.bingli.duskeval.model.dto.userAnswer.UserAnswerEditRequest;
 import com.bingli.duskeval.model.dto.userAnswer.UserAnswerQueryRequest;
 import com.bingli.duskeval.model.dto.userAnswer.UserAnswerUpdateRequest;
+import com.bingli.duskeval.model.entity.App;
 import com.bingli.duskeval.model.entity.UserAnswer;
 import com.bingli.duskeval.model.entity.User;
 import com.bingli.duskeval.model.vo.UserAnswerVO;
+import com.bingli.duskeval.scoring.ScoringStrategyExecutor;
+import com.bingli.duskeval.service.AppService;
 import com.bingli.duskeval.service.UserAnswerService;
 import com.bingli.duskeval.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -43,8 +46,11 @@ public class UserAnswerController {
     @Resource
     private UserService userService;
 
-    // region 增删改查
+    @Resource
+    private ScoringStrategyExecutor scoringStrategyExecutor;
 
+    @Resource
+    private AppService appService;
     /**
      * 创建用户答案
      *
@@ -55,14 +61,12 @@ public class UserAnswerController {
     @PostMapping("/add")
     public BaseResponse<Long> addUserAnswer(@RequestBody UserAnswerAddRequest userAnswerAddRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(userAnswerAddRequest == null, ErrorCode.PARAMS_ERROR);
-        // todo 在此处将实体类和 DTO 进行转换
         UserAnswer userAnswer = new UserAnswer();
         BeanUtils.copyProperties(userAnswerAddRequest, userAnswer);
         List<String> choices = userAnswerAddRequest.getChoices();
         userAnswer.setChoices(JSONUtil.toJsonStr(choices));
         // 数据校验
         userAnswerService.validUserAnswer(userAnswer, true);
-        // todo 填充默认值
         User loginUser = userService.getLoginUser(request);
         userAnswer.setUserId(loginUser.getId());
         // 写入数据库
@@ -70,6 +74,16 @@ public class UserAnswerController {
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         // 返回新写入的数据 id
         long newUserAnswerId = userAnswer.getId();
+
+        App app = appService.getById(userAnswer.getAppId());
+try {
+        UserAnswer userAnswerWithResult =   scoringStrategyExecutor.doScore(choices,app);
+        userAnswerWithResult.setId(newUserAnswerId);
+        userAnswerService.updateById(userAnswerWithResult);
+        } catch (Exception e) {
+            log.error("用户答案评分失败",e);
+        }
+
         return ResultUtils.success(newUserAnswerId);
     }
 

@@ -21,7 +21,7 @@ public class QuestionUpdateRequest implements Serializable {
     /**
      * 题目内容（json格式）
      */
-    private QuestionDTO questionContent;
+    private List<QuestionDTO> questionContent;
 
 
     private static final long serialVersionUID = 1L;

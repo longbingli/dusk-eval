@@ -15,7 +15,7 @@ import com.bingli.duskeval.model.dto.app.AppQueryRequest;
 import com.bingli.duskeval.model.dto.app.AppUpdateRequest;
 import com.bingli.duskeval.model.entity.App;
 import com.bingli.duskeval.model.entity.User;
-import com.bingli.duskeval.model.enums.AppReviewStatusEnum;
+import com.bingli.duskeval.model.enums.ReviewStatusEnum;
 import com.bingli.duskeval.model.vo.AppVO;
 import com.bingli.duskeval.service.AppService;
 import com.bingli.duskeval.service.UserService;
@@ -60,7 +60,7 @@ public class AppController {
         appService.validApp(app, true);
         User loginUser = userService.getLoginUser(request);
         app.setUserId(loginUser.getId());
-        app.setReviewStatus(AppReviewStatusEnum.WAIT.getValue());
+        app.setReviewStatus(ReviewStatusEnum.WAIT.getValue());
         // 写入数据库
         boolean result = appService.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
@@ -227,7 +227,7 @@ public class AppController {
         if (!oldApp.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
-        app.setReviewStatus(AppReviewStatusEnum.WAIT.getValue());
+        app.setReviewStatus(ReviewStatusEnum.WAIT.getValue());
         // 操作数据库
         boolean result = appService.updateById(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
