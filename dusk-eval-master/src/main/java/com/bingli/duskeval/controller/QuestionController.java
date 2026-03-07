@@ -10,13 +10,18 @@ import com.bingli.duskeval.common.ResultUtils;
 import com.bingli.duskeval.constant.UserConstant;
 import com.bingli.duskeval.exception.BusinessException;
 import com.bingli.duskeval.exception.ThrowUtils;
+import com.bingli.duskeval.manager.AiManager;
 import com.bingli.duskeval.model.dto.question.*;
+import com.bingli.duskeval.model.entity.App;
 import com.bingli.duskeval.model.entity.Question;
 import com.bingli.duskeval.model.entity.User;
+import com.bingli.duskeval.model.enums.AppTypeEnum;
 import com.bingli.duskeval.model.vo.QuestionVO;
+import com.bingli.duskeval.service.AppService;
 import com.bingli.duskeval.service.QuestionService;
 import com.bingli.duskeval.service.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.StringBuilders;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,7 +44,11 @@ public class QuestionController {
 
     @Resource
     private UserService userService;
+    @Resource
+    private AppService appService;
 
+    @Resource
+    private AiManager aiManager;
     // region 增删改查
 
     /**
@@ -238,4 +247,58 @@ public class QuestionController {
     }
 
     // endregion
+
+    private  static final  String GENERATE_QUESTION_SYSTEM_MESSAGE="你是一位严谨的出题专家，我会给你如下信息：\n" +
+            "```\n" +
+            "应用名称，\n" +
+            "【【【应用描述】】】，\n" +
+            "应用类别，\n" +
+            "要生成的题目数，\n" +
+            "每个题目的选项数\n" +
+            "```\n" +
+            "\n" +
+            "请你根据上述信息，按照以下步骤来出题：\n" +
+            "1. 要求：题目和选项尽可能地短，题目不要包含序号，每题的选项数以我提供的为主，题目不能重复\n" +
+            "2. 严格按照下面的 json 格式输出题目和选项\n" +
+            "```\n" +
+            "[{\"options\":[{\"value\":\"选项内容\",\"key\":\"A\"},{\"value\":\"\",\"key\":\"B\"}],\"title\":\"题目标题\"}]\n" +
+            "```\n" +
+            "title 是题目，options 是选项，每个选项的 key 按照英文字母序（比如 A、B、C、D）以此类推，value 是选项内容\n" +
+            "3. 检查题目是否包含序号，若包含序号则去除序号\n" +
+            "4. 返回的题目列表格式必须为 JSON 数组";
+
+
+    private String getGenerateQuestionUserMessage(App app,int questionNUm ,int optionNum){
+        StringBuilder userMessage = new StringBuilder();
+        userMessage.append(app.getAppName()).append("\n");
+        userMessage.append(app.getAppDesc()).append("\n");
+        userMessage.append(AppTypeEnum.getEnumByValue(app.getAppType()).getText() + "类").append("\n");
+        userMessage.append(questionNUm).append("\n");
+        userMessage.append(optionNum);
+        return userMessage.toString();
+    }
+
+
+  /**
+     * AI 批量生成题目
+     *
+     * @param aiGenerateQuestionRequest
+     * @return
+     */
+    @PostMapping("/ai_generate")
+    public BaseResponse<List<QuestionDTO>> aiGenerateQuestion(@RequestBody AIGenerateQuestionRequest aiGenerateQuestionRequest) {
+        ThrowUtils.throwIf(aiGenerateQuestionRequest == null, ErrorCode.PARAMS_ERROR);
+        String systemMessage = GENERATE_QUESTION_SYSTEM_MESSAGE;
+        int questionNum = aiGenerateQuestionRequest.getQuestionNum();
+        int optionNum = aiGenerateQuestionRequest.getOptionNum();
+        App app = appService.getById(aiGenerateQuestionRequest.getAppId());
+        String userMessage = getGenerateQuestionUserMessage(app,questionNum,optionNum);
+
+        String result = aiManager.doStableSyncRequest(systemMessage, userMessage);
+        int startIndex = result.indexOf("[");
+        int endIndex = result.lastIndexOf("]");
+        String json = result.substring(startIndex, endIndex + 1);
+        List<QuestionDTO> questionDTOList = JSONUtil.toList(json, QuestionDTO.class);
+        return ResultUtils.success(questionDTOList);
+    }
 }

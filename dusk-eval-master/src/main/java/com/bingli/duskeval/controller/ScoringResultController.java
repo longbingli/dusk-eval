@@ -1,6 +1,7 @@
 package com.bingli.duskeval.controller;
 
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bingli.duskeval.annotation.AuthCheck;
 import com.bingli.duskeval.common.BaseResponse;
@@ -10,13 +11,13 @@ import com.bingli.duskeval.common.ResultUtils;
 import com.bingli.duskeval.constant.UserConstant;
 import com.bingli.duskeval.exception.BusinessException;
 import com.bingli.duskeval.exception.ThrowUtils;
-import com.bingli.duskeval.model.dto.scoringResult.ScoringResultAddRequest;
-import com.bingli.duskeval.model.dto.scoringResult.ScoringResultEditRequest;
-import com.bingli.duskeval.model.dto.scoringResult.ScoringResultQueryRequest;
-import com.bingli.duskeval.model.dto.scoringResult.ScoringResultUpdateRequest;
+import com.bingli.duskeval.model.dto.scoringResult.*;
+import com.bingli.duskeval.model.entity.App;
+import com.bingli.duskeval.model.entity.Question;
 import com.bingli.duskeval.model.entity.ScoringResult;
 import com.bingli.duskeval.model.entity.User;
 import com.bingli.duskeval.model.vo.ScoringResultVO;
+import com.bingli.duskeval.service.QuestionService;
 import com.bingli.duskeval.service.ScoringResultService;
 import com.bingli.duskeval.service.UserService;
 import io.github.classgraph.json.JSONUtils;
@@ -43,6 +44,9 @@ public class ScoringResultController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private QuestionService questionService;
 
     // region 增删改查
 
@@ -241,4 +245,8 @@ public class ScoringResultController {
     }
 
     // endregion
+
+
+
+
 }
