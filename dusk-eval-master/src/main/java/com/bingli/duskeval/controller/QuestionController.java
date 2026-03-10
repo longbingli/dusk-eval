@@ -1,5 +1,8 @@
 package com.bingli.duskeval.controller;
 
+import ai.z.openapi.service.model.ModelData;
+import ai.z.openapi.service.model.SSE;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bingli.duskeval.annotation.AuthCheck;
@@ -20,14 +23,22 @@ import com.bingli.duskeval.model.vo.QuestionVO;
 import com.bingli.duskeval.service.AppService;
 import com.bingli.duskeval.service.QuestionService;
 import com.bingli.duskeval.service.UserService;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.message.Message;
 import org.apache.logging.log4j.util.StringBuilders;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.jar.JarOutputStream;
 
 /**
  * 题目接口
@@ -300,5 +311,84 @@ public class QuestionController {
         String json = result.substring(startIndex, endIndex + 1);
         List<QuestionDTO> questionDTOList = JSONUtil.toList(json, QuestionDTO.class);
         return ResultUtils.success(questionDTOList);
+    }
+    /**
+     * AI 实时批量生成题目（sse）
+     *
+     * @param aiGenerateQuestionRequest
+     * @return
+     */
+    @GetMapping(value = "/ai_generate/sse")
+    public SseEmitter aiGenerateQuestionSSE( AIGenerateQuestionRequest aiGenerateQuestionRequest) {
+
+        ThrowUtils.throwIf(aiGenerateQuestionRequest == null, ErrorCode.PARAMS_ERROR);
+
+        int questionNum = aiGenerateQuestionRequest.getQuestionNum();
+        int optionNum = aiGenerateQuestionRequest.getOptionNum();
+
+        App app = appService.getById(aiGenerateQuestionRequest.getAppId());
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+
+        String userMessage = getGenerateQuestionUserMessage(app, questionNum, optionNum);
+
+        // 0L 表示不超时
+        SseEmitter sseEmitter = new SseEmitter(0L);
+
+        Flowable<ModelData> flowable = aiManager.doStreamStableRequest(
+                GENERATE_QUESTION_SYSTEM_MESSAGE,
+                userMessage
+        );
+
+        StringBuilder stringBuilder = new StringBuilder();
+        AtomicInteger count = new AtomicInteger(0);
+
+        flowable
+                .observeOn(Schedulers.io())
+                .flatMap(chunk -> {
+                    String content = null;
+                    if (chunk != null
+                            && chunk.getChoices() != null
+                            && !chunk.getChoices().isEmpty()
+                            && chunk.getChoices().get(0) != null
+                            && chunk.getChoices().get(0).getDelta() != null) {
+                        content = chunk.getChoices().get(0).getDelta().getContent();
+                    }
+                    return StrUtil.isBlank(content) ? Flowable.empty() : Flowable.just(content);
+                })
+                .map(message -> message.replaceAll("\\s", ""))
+                .filter(StrUtil::isNotBlank)
+                .flatMap(message -> {
+                    List<Character> characterList = new ArrayList<>();
+                    for (char c : message.toCharArray()) {
+                        characterList.add(c);
+                    }
+                    return Flowable.fromIterable(characterList);
+                })
+                .doOnNext(c -> {
+                    if (c == '{') {
+                        count.incrementAndGet();
+                    }
+                    if (count.get() > 0) {
+                        stringBuilder.append(c);
+                    }
+                    if (c == '}') {
+                        count.decrementAndGet();
+                        if (count.get() == 0) {
+                            try {
+                                sseEmitter.send(stringBuilder.toString());
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                            stringBuilder.setLength(0);
+                        }
+                    }
+                })
+                .doOnComplete(sseEmitter::complete)
+                .subscribe(
+                        item -> {
+                        },
+                        error -> sseEmitter.completeWithError(error)
+                );
+        return sseEmitter;
     }
 }

@@ -6,6 +6,7 @@ import ai.z.openapi.service.model.*;
 import com.bingli.duskeval.common.ErrorCode;
 import com.bingli.duskeval.config.AiConfig;
 import com.bingli.duskeval.exception.ThrowUtils;
+import io.reactivex.rxjava3.core.Flowable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +27,25 @@ public class AiManager {
 
     @Resource
     private AiConfig aiConfig;
+
+    public Flowable<ModelData> doStreamStableRequest(String systemMsg, String userMsg) {
+        List<ChatMessage> messages = new ArrayList<>();
+        messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemMsg));
+        messages.add(new ChatMessage(ChatMessageRole.USER.value(), userMsg));
+        return doStreamRequest(messages, STABLE_TEMPERATURE);
+    }
+    public Flowable<ModelData> doStreamRequest(List<ChatMessage> messages,Float temperature){
+        ChatCompletionCreateParams request = ChatCompletionCreateParams.builder()
+                .model(aiConfig.getModel())
+                .stream(true)
+                .temperature(temperature)
+                .messages(messages)
+                .build();
+
+
+        ChatCompletionResponse response = zhipuAiClient.chat().createChatCompletion(request);
+        return response.getFlowable();
+    }
 
 /**
      * AI同步请求(答案较稳定)
